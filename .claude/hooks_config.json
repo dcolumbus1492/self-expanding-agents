@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SubagentStop": [
+      {
+        "matcher": "meta-agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/davidcolumbus/repositories/cc-playground/dynamic_agents/restart_hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}

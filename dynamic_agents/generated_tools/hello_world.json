@@ -1,0 +1,15 @@
+{
+  "name": "hello_world",
+  "description": "A simple hello world tool for testing",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Name to greet"
+      }
+    },
+    "required": []
+  },
+  "implementation": "const name = args.name || 'World';\nreturn { greeting: `Hello, ${name}!` };"
+}

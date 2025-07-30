@@ -1,0 +1,5 @@
+**RECOMMENDED**
+Uninstall and re-install Claude Code to get the latest version.
+```zsh
+rm -rf ~/.nvm/versions/node/v22.14.0/lib/node_modules/@anthropic-ai/claude-code && npm install -g @anthropic-ai/claude-code@latest
+```

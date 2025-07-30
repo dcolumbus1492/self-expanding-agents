@@ -1,0 +1,13 @@
+{
+  "name": "dynamic-tools-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for dynamically loading tools",
+  "main": "dynamic_tool_loader.js",
+  "scripts": {
+    "start": "node dynamic_tool_loader.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.6",
+    "zod": "^3.24.1"
+  }
+}

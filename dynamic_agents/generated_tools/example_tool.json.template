@@ -1,0 +1,20 @@
+{
+  "name": "example_csv_analyzer",
+  "description": "Analyzes CSV files and returns statistics",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "filepath": {
+        "type": "string",
+        "description": "Path to the CSV file"
+      },
+      "operation": {
+        "type": "string",
+        "enum": ["summary", "columns", "sample"],
+        "description": "Type of analysis to perform"
+      }
+    },
+    "required": ["filepath", "operation"]
+  },
+  "implementation": "const fs = require('fs').promises;\nconst result = await fs.readFile(args.filepath, 'utf-8');\n// Tool implementation here\nreturn { status: 'success', data: result.substring(0, 100) };"
+}
