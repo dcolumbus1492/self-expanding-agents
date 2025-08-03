@@ -12,7 +12,20 @@ This proof-of-concept shows how to build agents that can:
 
 ## Quick Start: See It In Action
 
-### 1. Run the Experiment
+### 1. Run the Calculator Example
+
+```bash
+python start_dynamic_system.py "create a calculator and calculate 7365464 * 5434536"
+```
+
+**What happens:**
+1. Primary agent realizes it needs a calculator specialist
+2. Meta-agent creates a custom `calculator` agent with MCP server
+3. System automatically restarts (Phoenix Pattern) 
+4. New calculator specialist performs the multiplication
+5. You get the result: **40,022,443,838,304**
+
+### 2. Try Text Analysis
 
 ```bash
 python start_dynamic_system.py "Create a word counter specialist that analyzes text files and gives detailed statistics, then use it to analyze README.md"
@@ -25,7 +38,7 @@ python start_dynamic_system.py "Create a word counter specialist that analyzes t
 4. New specialist analyzes your README.md file
 5. You get detailed text statistics
 
-### 2. Verify the Magic
+### 3. Verify the Magic
 
 Check that a new agent was created:
 ```bash
@@ -39,7 +52,7 @@ ls logs/
 # Shows session directories with restart tracking
 ```
 
-### 3. Try Another Example
+### 4. Try Another Example
 
 ```bash
 python start_dynamic_system.py "Create a JSON beautifier specialist and use it to format all JSON files in this directory"

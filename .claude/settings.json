@@ -40,26 +40,6 @@
         ]
       }
     ],
-    "SubagentStop": [
-      {
-        "matcher": "meta-agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 .claude/hooks/subagent_stop.py"
-          }
-        ]
-      },
-      {
-        "matcher": "general-purpose",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 .claude/hooks/subagent_stop.py"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
