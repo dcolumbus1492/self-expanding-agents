@@ -1,9 +1,4 @@
 {
   "mcpServers": {
-    "leetspeak": {
-      "command": "python",
-      "args": ["./dynamic_agents/generated_mcp/leetspeak_server.py"],
-      "env": {}
-    }
-  }
+   }
 }

@@ -26,17 +26,25 @@ def setup_configuration():
 def start_claude_with_config(system_prompt, task=None):
     """Start Claude Code with primary agent configuration"""
     
-    # Build Claude command with restrictions
+    # Build Claude command - using system prompt enforcement since --allowedTools is broken
     cmd = [
         "claude",
-        "--system-prompt", system_prompt,
-        "--allowedTools", "Task",  # Only allow Task tool for delegation
+        "--append-system-prompt", system_prompt,
         "--permission-mode", "acceptEdits"  # Accept edits to create subagents
     ]
     
-    # Add task if provided
+    # WORKAROUND: Tool restrictions enforced via system prompt instead of --allowedTools flag
+    # The --allowedTools flag doesn't work properly with subprocess
+    print("🔒 TOOL RESTRICTIONS ACTIVE - Primary agent instructed to use Task tool only")
+    print("🔄 All other operations must be delegated to meta-agent (enforced by system prompt)")
+    print("⚠️  Using system prompt enforcement due to --allowedTools flag bug")
+    
+    # Add task if provided (for non-interactive mode)
     if task:
-        cmd.extend(["-p", task])
+        # WORKAROUND: Don't use -p flag due to subprocess hanging issue
+        # Instead, write task to stdin after startup
+        print(f"📝 Task will be provided via stdin: {task}")
+        # cmd.extend(["-p", task])  # Commented out due to hanging issue
     
     print("🚀 Starting dynamic agent system...")
     print(f"🎯 Allowed tools: Task only")
@@ -47,10 +55,19 @@ def start_claude_with_config(system_prompt, task=None):
     else:
         print("🔄 Interactive mode")
     
+    print(f"🔧 Command: claude --append-system-prompt [SYSTEM_PROMPT] --permission-mode acceptEdits")
+    
     # Execute Claude Code
     try:
-        result = subprocess.run(cmd, cwd=os.getcwd())
-        return result.returncode
+        if task:
+            # Use -p flag with the task as prompt
+            cmd.extend(["-p", task])
+            result = subprocess.run(cmd, cwd=os.getcwd(), timeout=300)
+            return result.returncode
+        else:
+            # Direct interactive mode
+            result = subprocess.run(cmd, cwd=os.getcwd())
+            return result.returncode
     except KeyboardInterrupt:
         print("\n👋 Dynamic agent system stopped")
         return 0

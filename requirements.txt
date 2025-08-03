@@ -1,0 +1,22 @@
+# Dynamic Agent Creation System Requirements
+
+# Core MCP dependencies
+mcp>=1.3.2
+pydantic>=2.0.0
+
+# HTTP and async support
+aiohttp>=3.9.0
+requests>=2.31.0
+
+# Data processing (for generated specialists)
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Development and testing
+pytest>=7.0.0
+
+# Note: This system requires Claude Code CLI
+# Install from: https://docs.anthropic.com/en/docs/claude-code
