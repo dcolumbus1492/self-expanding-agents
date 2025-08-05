@@ -6,6 +6,7 @@ Starts Claude Code with primary agent configuration
 
 import os
 import sys
+import signal
 import subprocess
 from pathlib import Path
 
@@ -66,7 +67,7 @@ If you attempt any non-Task tool, respond: "TOOL_VIOLATION: [toolname] - Task de
     
     print("🚀 Starting dynamic agent system...")
     print(f"🎯 Primary agent: Task tool only")
-    print(f"🔧 Hooks: Phoenix Pattern → deterministic restart")
+    print(f"🔧 Hooks: Phoenix Pattern → auto-restart when agents created")
     
     if task:
         print(f"📋 Task: {task}")
@@ -75,49 +76,60 @@ If you attempt any non-Task tool, respond: "TOOL_VIOLATION: [toolname] - Task de
     
     print(f"🔧 Command: claude --system-prompt-file [TEMP_FILE] --permission-mode acceptEdits")
     
-    # Execute Claude Code
+    # Execute Claude Code with restart monitoring
+    import time
+    RESTART_MARKER = Path(".restart_needed")
+    child_proc = None
     try:
+        # Helper to launch Claude
+        def launch(cmd_args):
+            print(f"▶️ Launching: {' '.join(cmd_args)}")
+            # Launch Claude in its own process group so we can terminate the whole tree
+            return subprocess.Popen(cmd_args, cwd=os.getcwd(), start_new_session=True)
+
         if task:
-            # Write task to temp file and use -p to avoid interactive mode
+            # First launch includes the user task
             task_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False)
             task_file.write(task)
             task_file.flush()
             task_file.close()
-            
-            cmd.extend(["-p", f"@{task_file.name}"])
-            result = subprocess.run(cmd, cwd=os.getcwd())
-            
-            # Check if Phoenix restart occurred
-            restart_file = Path("PHOENIX_RESTART_EXECUTED.txt")
-            if restart_file.exists():
-                print("🔄 Phoenix restart detected - continuing with new agent...")
-                
-                # Wait for restart to complete
-                import time
-                time.sleep(3)
-                
-                # Continue with the original task using new agent
-                continue_cmd = [
-                    "claude",
-                    "--continue",
-                    "-p", task
-                ]
-                print("🚀 Continuing with new specialized agent...")
-                result = subprocess.run(continue_cmd, cwd=os.getcwd())
-            
-            # Clean up
-            try:
-                os.unlink(task_file.name)
-            except:
-                pass
-                
-            return result.returncode
+            child_proc = launch(cmd + ["-p", f"@{task_file.name}"])
         else:
-            # Direct interactive mode
-            result = subprocess.run(cmd, cwd=os.getcwd())
-            return result.returncode
+            child_proc = launch(cmd)
+
+        # Main loop: watch for marker file or process exit
+        while True:
+            ret_code = child_proc.poll()
+            if RESTART_MARKER.exists():
+                print("🔄 Restart marker detected — restarting Claude")
+                RESTART_MARKER.unlink(missing_ok=True)
+                # Graceful termination
+                # Terminate entire process group (Claude may spawn children)
+                pgid = os.getpgid(child_proc.pid)
+                os.killpg(pgid, signal.SIGTERM)
+                try:
+                    child_proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    os.killpg(pgid, signal.SIGKILL)
+                # Mark that restart occurred so hooks in next session can enforce stricter rules
+                Path(".primary_locked").touch()
+                # Relaunch with FRESH session (not --continue) so new subagents are visible
+                # Fresh session can see newly created subagents, --continue cannot
+                restart_cmd = [
+                    "claude", 
+                    "--system-prompt-file", prompt_file.name,
+                    "--permission-mode", "acceptEdits"
+                ]
+                child_proc = launch(restart_cmd)
+                continue
+            if ret_code is not None:
+                print(f"🎉 Claude exited with code {ret_code}")
+                return ret_code
+            time.sleep(1)
     except KeyboardInterrupt:
-        print("\n👋 Dynamic agent system stopped")
+        print("\n👋 Dynamic agent system stopped by user")
+        if child_proc and child_proc.poll() is None:
+            os.killpg(os.getpgid(child_proc.pid), signal.SIGTERM)
         return 0
     except Exception as e:
         print(f"❌ Error starting system: {e}")

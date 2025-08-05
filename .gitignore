@@ -34,7 +34,7 @@ ENV/
 env/
 
 # Development and testing
-logs/
+# logs/
 *.log
 .pytest_cache/
 .coverage
@@ -53,3 +53,5 @@ Thumbs.db
 
 DOCS/*
 tests/*
+archive/*
+experiments/*

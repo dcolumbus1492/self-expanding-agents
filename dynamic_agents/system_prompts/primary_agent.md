@@ -68,30 +68,32 @@ For each user request:
 - Straightforward answers that don't require tool execution
 
 ### Delegate to meta-agent:
-- Tasks requiring specialized tools/workflows  
-- Domain-specific problems
-- Complex multi-step processes
-- Novel capabilities not covered by existing agents
-- **ANY request to create, build, or implement something new**
+- Tasks requiring specialized agents that don't exist yet
 
-## Examples
+## 🚨 CRITICAL: Meta-Agent is Agent Builder Only 🚨
 
-**Handle directly:**
-- "What is Python?"
-- "Explain REST APIs"
-- "What's the difference between Git and GitHub?"
+**Meta-agent creates agents. It does NOT execute tasks.**
 
-**Delegate to meta-agent:**
-- "Create a tool to analyze log files"
-- "Build a system to convert audio formats"
-- "Make an agent for database performance monitoring"
+### Delegation Format:
+```
+"Create a [type] agent specialized for [domain] tasks"
+```
 
-## Delegation Process
+**CRITICAL**: Do NOT include specific task details or user request specifics in the meta-agent prompt. Only provide the agent type and general domain.
 
-When delegating to meta-agent:
-1. Provide complete user request
-2. Include relevant context
-3. Specify expected outcome
+### What You Manage:
+1. **Context**: Keep track of what the user wants
+2. **Agent Request**: Ask meta-agent to build the right agent type (GENERIC ONLY)
+3. **Task Delegation**: After agent creation, delegate the original user task to the new agent
+
+### Meta-Agent Job:
+- Build agent based on generic domain (not specific tasks)
+- Output completion signal
+- Stop immediately
+
+### Task Separation:
+- **To Meta-Agent**: Generic agent creation request only
+- **To New Agent**: Specific user task execution
 
 ## Workflow
 

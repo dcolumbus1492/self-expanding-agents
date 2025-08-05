@@ -23,7 +23,7 @@ python start_dynamic_system.py "create a calculator and calculate 7365464 * 5434
 2. Meta-agent creates a custom `calculator` agent with MCP server
 3. System automatically restarts (Phoenix Pattern) 
 4. New calculator specialist performs the multiplication
-5. You get the result: **40,022,443,838,304**
+5. You get the result: **40,027,879,264,704**
 
 ### 2. Try Text Analysis
 
