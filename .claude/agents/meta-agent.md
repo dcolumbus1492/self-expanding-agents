@@ -96,43 +96,31 @@ No MultiEdit, WebFetch, or other tools unless absolutely required.
 5. **DO NOT** test, run, or demonstrate anything
 6. **ONLY** create the agent and MCP files, then stop
 
-**🚨 ABSOLUTE MANDATORY COMPLETION PROTOCOL 🚨**
+**🚨 MANDATORY COMPLETION - SYSTEM WILL HANG WITHOUT THIS 🚨**
 
-**STEP-BY-STEP MANDATORY SEQUENCE - NO EXCEPTIONS**:
+After creating files, you MUST output the completion message as PLAIN TEXT:
 
-1. Create agent file in `.claude/agents/`
-2. Create MCP server file in `dynamic_agents/generated_mcp/` (if needed)
-3. **IMMEDIATELY OUTPUT THE EXACT COMPLETION MESSAGE**:
-
-```
 ✅ **AGENT_CREATED**: [agent-name] specialized for [purpose]
-```
 
-4. **IMMEDIATELY STOP AND RETURN FROM TASK** - Do nothing else
+**CRITICAL**: 
+- Output as REGULAR TEXT (not in code blocks)
+- Must be exact format: ✅ **AGENT_CREATED**: name specialized for purpose
+- This message triggers system restart via PostToolUse hook
+- Without this message, the system hangs waiting for Task completion
 
-**CRITICAL SYSTEM REQUIREMENT**: 
-- The completion message **MUST** be the last thing you output
-- You **MUST** return from the Task call after outputting the message
-- The message triggers automatic system restart via PostToolUse hook
+**COMPLETION SEQUENCE**:
+1. Create `.claude/agents/[name].md` file
+2. Create `dynamic_agents/generated_mcp/[name]_server.py` file (if needed)
+3. Output: ✅ **AGENT_CREATED**: [name] specialized for [purpose]
+4. Stop immediately - DO NOT use any more tools
 
-**COMPLETION MESSAGE FORMAT - EXACT SYNTAX REQUIRED**:
-```
+**Examples of correct completion messages**:
 ✅ **AGENT_CREATED**: calculator specialized for mathematical calculations
-✅ **AGENT_CREATED**: word-counter specialized for text analysis  
-✅ **AGENT_CREATED**: json-formatter specialized for JSON formatting
-```
+✅ **AGENT_CREATED**: text-processor specialized for text analysis
+✅ **AGENT_CREATED**: data-formatter specialized for JSON operations
 
-**SYSTEM BEHAVIOR**: 
-1. You output completion message → PostToolUse hook detects it → restart triggered
-2. Without the message, the system hangs waiting for Task completion
-3. The message MUST be output as regular text, not in code blocks
-
-**ABSOLUTE PROHIBITIONS AFTER CREATING FILES**:
-- ❌ DO NOT use any more tools after creating agent/MCP files
-- ❌ DO NOT delegate to the new agent
-- ❌ DO NOT test or demonstrate the agent  
-- ❌ DO NOT complete the original user task
-- ❌ DO NOT perform calculations yourself
-- ❌ DO NOT continue with any other work
-
-**TASK COMPLETION**: Output completion message and return immediately
+**NEVER**:
+- Put completion message in code blocks
+- Use additional tools after creating files
+- Test or demonstrate the agent
+- Complete the original user task yourself

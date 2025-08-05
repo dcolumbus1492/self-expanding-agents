@@ -1,5 +1,15 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/log_user_input.py"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "*",
@@ -7,17 +17,31 @@
           {
             "type": "command",
             "command": "python3 .claude/hooks/block_primary_non_task.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/log_pre_tool.py"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Task",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/phoenix_restart.py"
+            "command": "python3 .claude/hooks/log_post_tool.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/log_stop.py"
           }
         ]
       }
