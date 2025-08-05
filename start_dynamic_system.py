@@ -113,12 +113,13 @@ If you attempt any non-Task tool, respond: "TOOL_VIOLATION: [toolname] - Task de
                     os.killpg(pgid, signal.SIGKILL)
                 # Mark that restart occurred so hooks in next session can enforce stricter rules
                 Path(".primary_locked").touch()
-                # Relaunch with FRESH session (not --continue) so new subagents are visible
-                # Fresh session can see newly created subagents, --continue cannot
+                # Relaunch with --continue to preserve session context and continue task
+                # This allows the Phoenix restart to maintain conversation history and context
                 restart_cmd = [
                     "claude", 
-                    "--system-prompt-file", prompt_file.name,
-                    "--permission-mode", "acceptEdits"
+                    "--continue", "meta-agent finished. continue with original task",
+                    "--permission-mode", "acceptEdits",
+                    "--allowedTools", "Task"
                 ]
                 child_proc = launch(restart_cmd)
                 continue

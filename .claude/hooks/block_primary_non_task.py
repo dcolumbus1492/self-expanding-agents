@@ -24,8 +24,9 @@ LOCK_FILE = Path(".primary_locked")
 subagent_type = data.get("tool_input", {}).get("subagent_type", "")
 
 # Enforce after first restart (lock file exists)
-if LOCK_FILE.exists() and not subagent_type and tool_name != "Task": 
-    print(f"⛔ Primary agent may only use Task tool (attempted {tool_name})", file=sys.stderr)
+# Allow Task tool and MCP tools (which are the point of the Phoenix restart)
+if LOCK_FILE.exists() and not subagent_type and tool_name != "Task" and not tool_name.startswith("mcp__"): 
+    print(f"⛔ Primary agent may only use Task tool or MCP tools (attempted {tool_name})", file=sys.stderr)
     sys.exit(2)  # block the tool call
 
 # Otherwise allow
