@@ -10,21 +10,23 @@ import signal
 import subprocess
 from pathlib import Path
 
-def setup_configuration():
+def setup_configuration(headless=False):
     """Set up the configuration for dynamic agent system"""
     
     # Read primary agent system prompt
     system_prompt_file = Path("dynamic_agents/system_prompts/primary_agent.md")
     if not system_prompt_file.exists():
-        print("❌ Primary agent system prompt not found!")
+        if not headless:
+            print("❌ Primary agent system prompt not found!")
         return False
     
     primary_prompt = system_prompt_file.read_text()
     
-    print("✅ Primary agent system prompt loaded")
+    if not headless:
+        print("✅ Primary agent system prompt loaded")
     return primary_prompt
 
-def start_claude_with_config(system_prompt, task=None):
+def start_claude_with_config(system_prompt, task=None, headless=False, exit_after_completion=False):
     """Start Claude Code with primary agent configuration"""
     
     # CRITICAL: Create concise system prompt to avoid command line length issues
@@ -48,33 +50,42 @@ If you attempt any non-Task tool, respond: "TOOL_VIOLATION: [toolname] - Task de
     cmd = [
         "claude",
         "--system-prompt-file", prompt_file.name,
-        "--permission-mode", "acceptEdits",  # Accept edits to create subagents
         "--allowedTools", "Task"  # CRITICAL: Restrict primary agent to Task only
     ]
+    
+    # Add permission mode based on headless setting
+    if headless:
+        # Headless mode: bypass permissions for non-interactive execution
+        cmd.extend(["--permission-mode", "bypassPermissions"])
+    else:
+        # Interactive mode: accept edits to create subagents
+        cmd.extend(["--permission-mode", "acceptEdits"])
     
     # DUAL ENFORCEMENT: System prompt + Claude Code flags
     # Primary agent: Restricted to Task tool only (via --allowedTools)
     # Subagents: Full tool access (tool restrictions don't cascade to subagents)
-    print("🔒 DUAL TOOL RESTRICTIONS ACTIVE:")
-    print("   1. PRIMARY AGENT: Task tool only (--allowedTools Task)")
-    print("   2. SUBAGENTS: Full tool access (restrictions don't cascade)")
-    print("   3. Meta-agent: Can use Write tools to create files")
-    print("🔄 All operations MUST be delegated via Task tool")
+    if not headless:
+        print("🔒 DUAL TOOL RESTRICTIONS ACTIVE:")
+        print("   1. PRIMARY AGENT: Task tool only (--allowedTools Task)")
+        print("   2. SUBAGENTS: Full tool access (restrictions don't cascade)")
+        print("   3. Meta-agent: Can use Write tools to create files")
+        print("🔄 All operations MUST be delegated via Task tool")
     
     # Add task handling
-    if task:
-        print(f"📝 Task will be provided via stdin: {task}")
-    
-    print("🚀 Starting dynamic agent system...")
-    print(f"🎯 Primary agent: Task tool only")
-    print(f"🔧 Hooks: Phoenix Pattern → auto-restart when agents created")
-    
-    if task:
-        print(f"📋 Task: {task}")
-    else:
-        print("🔄 Interactive mode")
-    
-    print(f"🔧 Command: claude --system-prompt-file [TEMP_FILE] --permission-mode acceptEdits")
+    if not headless:
+        if task:
+            print(f"📝 Task will be provided via stdin: {task}")
+        
+        print("🚀 Starting dynamic agent system...")
+        print(f"🎯 Primary agent: Task tool only")
+        print(f"🔧 Hooks: Phoenix Pattern → auto-restart when agents created")
+        
+        if task:
+            print(f"📋 Task: {task}")
+        else:
+            print("🔄 Interactive mode")
+        
+        print(f"🔧 Command: claude --system-prompt-file [TEMP_FILE] --permission-mode acceptEdits")
     
     # Execute Claude Code with restart monitoring
     import time
@@ -83,7 +94,8 @@ If you attempt any non-Task tool, respond: "TOOL_VIOLATION: [toolname] - Task de
     try:
         # Helper to launch Claude
         def launch(cmd_args):
-            print(f"▶️ Launching: {' '.join(cmd_args)}")
+            if not headless:
+                print(f"▶️ Launching: {' '.join(cmd_args)}")
             # Launch Claude in its own process group so we can terminate the whole tree
             return subprocess.Popen(cmd_args, cwd=os.getcwd(), start_new_session=True)
 
@@ -101,7 +113,8 @@ If you attempt any non-Task tool, respond: "TOOL_VIOLATION: [toolname] - Task de
         while True:
             ret_code = child_proc.poll()
             if RESTART_MARKER.exists():
-                print("🔄 Restart marker detected — restarting Claude")
+                if not headless:
+                    print("🔄 Restart marker detected — restarting Claude")
                 RESTART_MARKER.unlink(missing_ok=True)
                 # Graceful termination
                 # Terminate entire process group (Claude may spawn children)
@@ -118,13 +131,32 @@ If you attempt any non-Task tool, respond: "TOOL_VIOLATION: [toolname] - Task de
                 restart_cmd = [
                     "claude", 
                     "--continue", "meta-agent finished. continue with original task",
-                    "--permission-mode", "acceptEdits",
                     "--allowedTools", "Task"
                 ]
+                
+                # Add permission mode based on headless setting
+                if headless:
+                    restart_cmd.extend(["--permission-mode", "bypassPermissions"])
+                else:
+                    restart_cmd.extend(["--permission-mode", "acceptEdits"])
                 child_proc = launch(restart_cmd)
+                
+                # Track that we've restarted - next exit might be task completion
+                restarted_once = True
                 continue
             if ret_code is not None:
-                print(f"🎉 Claude exited with code {ret_code}")
+                if not headless:
+                    print(f"🎉 Claude exited with code {ret_code}")
+                
+                # Clean up .primary_locked file on exit
+                Path(".primary_locked").unlink(missing_ok=True)
+                
+                # If exit_after_completion is enabled and we've restarted once,
+                # assume task is complete and exit cleanly
+                if exit_after_completion and 'restarted_once' in locals():
+                    if not headless:
+                        print("✅ Task completed, exiting as requested")
+                        
                 return ret_code
             time.sleep(1)
     except KeyboardInterrupt:
@@ -150,28 +182,39 @@ def main():
     parser.add_argument("task", nargs="?", help="Task to execute")
     parser.add_argument("--interactive", action="store_true", help="Interactive mode")
     parser.add_argument("--test-prompt", help="Test prompt for validation")
+    parser.add_argument("--headless", action="store_true", help="Run without UI, output result only")
+    parser.add_argument("--exit-after-completion", action="store_true", help="Exit automatically after task completion")
     
     args = parser.parse_args()
     
-    print("🔄 DYNAMIC AGENT SYSTEM LAUNCHER")
-    print("=" * 50)
+    if not args.headless:
+        print("🔄 DYNAMIC AGENT SYSTEM LAUNCHER")
+        print("=" * 50)
     
     # Setup configuration
-    system_prompt = setup_configuration()
+    system_prompt = setup_configuration(args.headless)
     if not system_prompt:
         sys.exit(1)
+    
+    # Suppress launcher output in headless mode
+    if args.headless:
+        # In headless mode, suppress all launcher output except result
+        # Redirect stdout to stderr for launcher messages, keep final result on stdout
+        launcher_out = sys.stderr
+    else:
+        launcher_out = sys.stdout
     
     # Start Claude Code
     if args.test_prompt:
         # Test prompt mode for validation
-        print("🧪 TEST MODE: Using test prompt")
-        return_code = start_claude_with_config(system_prompt, args.test_prompt)
+        print("🧪 TEST MODE: Using test prompt", file=launcher_out)
+        return_code = start_claude_with_config(system_prompt, args.test_prompt, args.headless, args.exit_after_completion)
     elif args.task:
         # Single task mode
-        return_code = start_claude_with_config(system_prompt, args.task)
+        return_code = start_claude_with_config(system_prompt, args.task, args.headless, args.exit_after_completion)
     elif args.interactive:
         # Interactive mode
-        return_code = start_claude_with_config(system_prompt, None)  
+        return_code = start_claude_with_config(system_prompt, None, args.headless, args.exit_after_completion)  
     else:
         # Default: show help
         parser.print_help()

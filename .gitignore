@@ -51,8 +51,10 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-DOCS/*
 tests/*
 archive/*
 experiments/*
+
+AI_DOCS/*
+
 session_events.json

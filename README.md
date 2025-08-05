@@ -14,15 +14,21 @@ This proof-of-concept shows how to build agents that can:
 
 ### 1. Run the Calculator Example
 
+**Interactive Mode:**
 ```bash
 python start_dynamic_system.py "create a calculator and calculate 7365464 * 5434536"
 ```
 
+**Headless Mode (automation-friendly):**
+```bash
+python start_dynamic_system.py --headless --exit-after-completion "create a calculator and calculate 7365464 * 5434536"
+```
+
 **What happens:**
 1. Primary agent realizes it needs a calculator specialist
-2. Meta-agent creates a custom `calculator` agent with MCP server
-3. System automatically restarts (Phoenix Pattern) 
-4. New calculator specialist performs the multiplication
+2. Meta-agent creates both calculator agent (.claude/agents/calculator.md) and MCP server (dynamic_agents/generated_mcp/calculator_server.py)
+3. System automatically restarts (Phoenix Pattern - preserves context)
+4. New calculator specialist uses `mcp__calculator__calculate` tool
 5. You get the result: **40,027,879,264,704**
 
 ### 2. Try Text Analysis
@@ -68,9 +74,9 @@ Claude Code only scans for subagents at startup. Create new ones during a sessio
 ### The Solution
 Turn the constraint into a feature:
 
-1. **Meta-agent creates specialist** and says "**Agent created**"
-2. **Hook detects the phrase** and triggers automatic restart
-3. **System restarts with `--continue`** (preserves conversation)
+1. **Meta-agent creates specialist** and completes its subagent task
+2. **SubagentStop hook** detects meta-agent completion and triggers restart
+3. **System restarts with `--continue "meta-agent finished. continue with original task"`** (preserves context)
 4. **New specialist is now available** for the original task
 
 ```
@@ -94,7 +100,7 @@ Results ← Specialist Execution ← System Restart ← Hook Trigger
           ▼
 ┌──────────────────────┐
 │ Meta-Agent           │  ← Creates specialists
-│ (agent factory)      │  ← Generates .md files
+│ (agent factory)      │  ← Generates .md + MCP servers
 └─────────┬────────────┘
           ▼
 ┌──────────────────────┐
@@ -108,36 +114,11 @@ Results ← Specialist Execution ← System Restart ← Hook Trigger
 - **`start_dynamic_system.py`** - Main launcher script
 - **`.claude/agents/meta-agent.md`** - The agent factory
 - **`.claude/hooks/subagent_stop.py`** - Phoenix Pattern trigger
-- **`.claude/settings.local.json`** - Hook configuration
-- **`logs/`** - Session tracking and restart verification
+- **`.claude/settings.json`** - Hook configuration
 
 ## Real Session Example
 
-From actual logs of creating a JSON formatter:
-
-```json
-{
-  "event_type": "subagent_stop",
-  "subagent_type": "meta-agent",
-  "result_preview": "✅ **Agent created**: json-formatter specialized for formatting...",
-  "agent_creation_detected": true
-}
-```
-
-→ Hook triggers restart →
-
-```json
-{
-  "meta": {
-    "status": "restart_triggered",
-    "creations": 1
-  },
-  "metrics": {
-    "agents_created": 1,
-    "restarts": 1
-  }
-}
-```
+The system creates session logs that track the complete Phoenix Pattern execution. You can see the actual session events in `session_events.json` after running the system.
 
 ## Advanced Usage
 
@@ -146,16 +127,20 @@ From actual logs of creating a JSON formatter:
 python start_dynamic_system.py --interactive
 ```
 
+### Headless Mode (for automation)
+```bash
+# Suppress UI output, show only results
+python start_dynamic_system.py --headless "your task here"
+
+# Exit automatically after completion (great for scripts)
+python start_dynamic_system.py --headless --exit-after-completion "your task here"
+```
+
 ### Check System Status
 ```bash
 # See created specialists
 cat .claude/agents/*.md
 
-# Check recent sessions  
-ls -la logs/session_*/
-
-# View session details
-python -m json.tool logs/session_*/session_metadata.json
 ```
 
 ### Create Specific Specialists
@@ -208,58 +193,3 @@ Key configuration files:
 - `.claude/agents/meta-agent.md` - The agent factory
 - `.claude/hooks/subagent_stop.py` - Phoenix Pattern trigger
 
-### Verify Installation
-
-Test the system works:
-```bash
-python start_dynamic_system.py "Create a simple test agent and use it to say hello"
-```
-
-If successful, you'll see:
-1. Agent creation in progress
-2. Automatic system restart
-3. New agent executing the task
-
-### Troubleshooting
-
-**"No module named 'mcp'" error:**
-```bash
-pip install --upgrade mcp>=1.3.2
-```
-
-**Claude Code not found:**
-- Install Claude Code CLI from [official documentation](https://docs.anthropic.com/en/docs/claude-code)
-- Ensure it's in your PATH: `which claude`
-
-**Hook not triggering restart:**
-- Check `.claude/settings.json` exists and has proper hook configuration
-- Verify hook permissions: `chmod +x .claude/hooks/subagent_stop.py`
-- Check logs in `logs/` directory for error messages
-
-**System requirements:**
-- Python 3.8+ (check with `python --version`)
-- At least 1GB free disk space
-- Internet connection for Claude Code API calls
-
-## What Makes This Interesting
-
-This isn't just dynamic tool use - it's **dynamic capability expansion**. The system doesn't just get better at using existing tools; it creates entirely new capabilities and maintains awareness of what it built.
-
-Each specialist becomes a permanent part of the system, creating compound growth in capabilities over time.
-
-## Limitations
-
-- **2-3 second restart delay** during expansion
-- **Requires hook scripts** (though they're simple)
-- **30-60 seconds** to create each specialist
-- **Single session scope** currently
-
-## The Bigger Picture
-
-This experiment explores what happens when agents can expand their own toolset rather than just use existing tools more cleverly. It demonstrates that constraints in current platforms can become architectural advantages with creative approaches.
-
-The Phoenix Pattern specifically shows how to work with platform limitations rather than against them, turning a registration constraint into a clean separation between capability creation and execution phases.
-
----
-
-**Try the experiment** and watch your agent system grow new capabilities in real-time.
