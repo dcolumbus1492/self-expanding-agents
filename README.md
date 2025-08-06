@@ -2,6 +2,8 @@
 
 An experimental system that demonstrates agents creating their own specialists on demand using Claude Code's hooks, subagents, and MCP integration.
 
+(Read the blog post [here](https://medium.com/@dcolumbus1492/building-self-extending-agents-with-claude-code-f67480ab4002))
+
 ## What This Demonstrates
 
 This proof-of-concept shows how to build agents that can:
